@@ -14,12 +14,16 @@ const restify = require('restify');
 // See https://aka.ms/bot-services to learn more about the different parts of a bot.
 const {
     CloudAdapter,
+    ConversationState,
+    MemoryStorage,
+    UserState,
     ConfigurationServiceClientCredentialFactory,
     createBotFrameworkAuthenticationFromConfiguration
 } = require('botbuilder');
 
 // This bot's main dialog.
 const { EchoBot } = require('./bot');
+const { UserProfileDialog } = require('./dialogs/userProfileDialog');
 
 // Create HTTP server
 const server = restify.createServer();
@@ -67,8 +71,15 @@ const onTurnErrorHandler = async (context, error) => {
 // Set the onTurnError for the singleton CloudAdapter.
 adapter.onTurnError = onTurnErrorHandler;
 
+const memoryStorage = new MemoryStorage();
+
+// Create conversation state with in-memory storage provider.
+const conversationState = new ConversationState(memoryStorage);
+const userState = new UserState(memoryStorage);
+
 // Create the main dialog.
-const myBot = new EchoBot();
+const dialog = new UserProfileDialog(userState);
+const myBot = new EchoBot(conversationState, userState, dialog);
 
 // Listen for incoming requests.
 server.post('/api/messages', async (req, res) => {
