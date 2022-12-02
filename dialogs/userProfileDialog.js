@@ -72,7 +72,7 @@ class UserProfileDialog extends ComponentDialog {
         // Running a prompt here means the next WaterfallStep will be run when the user's response is received.
         return await step.prompt(CHOICE_PROMPT, {
             prompt: 'How can I help you today?',
-            choices: ChoiceFactory.toChoices(['Check URL', 'Scam Check', 'Fact Check'])
+            choices: ChoiceFactory.toChoices(['Check URL', 'Check Text',])
         });
     }
 
@@ -80,8 +80,8 @@ class UserProfileDialog extends ComponentDialog {
         step.values.transport = step.result.value;
         if (step.values.transport === 'Check URL')
         return await step.prompt(NAME_PROMPT, 'What is the URL?');
-        else if (step.values.transport === 'Scam Check')
-        return await step.prompt(NAME_PROMPT, 'What is the message you received?');
+        else if (step.values.transport === 'Check Text')
+        return await step.prompt(NAME_PROMPT, 'What is the text you received?');
         else if (step.values.transport === 'Fact Check')
         return await step.prompt(NAME_PROMPT, 'What is the claim?');
         else
@@ -94,18 +94,37 @@ class UserProfileDialog extends ComponentDialog {
         step.values.name = step.result;
 
         // We can send messages to the user at any point in the WaterfallStep.
-        await step.context.sendActivity(`Thanks.`);
-
+        if ((step.values.name).match(/.*example-phish.com.*/)){
+            await step.context.sendActivity(`This is a suspicious URL pretending to be a bank. Please close the URL and don't share any information with the site.`);
+            return await step.prompt(CONFIRM_PROMPT, 'Would you like to know more?', ['Yes','No']);
+        }
+        else if ((step.values.name).match(/.*scam-eshop.com.*/)){
+            await step.context.sendActivity(`This is a fake online shop. We recommend you to avoid purchasing anything from there.`);
+            return await step.prompt(CONFIRM_PROMPT, 'Do you want to learn more on how to recognize fake online scams?​', ['Yes','No']);
+        }
+        else{
+            return await step.retryPrompt();
+        }
+        //await step.context.sendActivity(`Thanks.`);
         // WaterfallStep always finishes with the end of the Waterfall or with another dialog; here it is a Prompt Dialog.
-        return await step.prompt(CONFIRM_PROMPT, 'Do you want to provide any additional information?', ['Yes','no']);
+        
     }
 
     async ageStep(step) {
         if (step.result) {
-            // User said "yes" so we will be prompting for the age.
-            // WaterfallStep always finishes with the end of the Waterfall or with another dialog; here it is a Prompt Dialog.
-            //const promptOptions = { prompt: 'Please enter your age.', retryPrompt: 'The value entered must be greater than 0 and less than 150.' };
-            return await step.next(-1);
+            if ((step.values.name).match(/.*example-phish.com.*/)){
+                await step.context.sendActivity(`This is a suspicious URL pretending to be a bank. Please close the URL and don't share any information with the site.`);
+                return await step.next(-1);
+            }
+            else if ((step.values.name).match(/.*scam-eshop.com.*/)){
+                await step.context.sendActivity(`Here a couple of things to always check:​
+                - Unrealistic low prices​
+                - Fake company addresses`);
+                return await step.next(-1);
+            }
+            else {
+                return await step.next(-1);
+            }
             //return await step.prompt(NUMBER_PROMPT, promptOptions);
         } else {
             // User said "no" so we will skip the next step. Give -1 as the age.
@@ -173,7 +192,7 @@ class UserProfileDialog extends ComponentDialog {
         }
         */
 
-        await step.context.sendActivity('Thanks. This URL is safe to use.');
+        await step.context.sendActivity('Hope this helps.');
         // WaterfallStep always finishes with the end of the Waterfall or with another dialog; here it is the end.
         return await step.endDialog();
     }

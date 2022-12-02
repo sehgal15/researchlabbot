@@ -62,7 +62,7 @@ class EchoBot extends ActivityHandler {
             for (let cnt = 0; cnt < membersAdded.length; ++cnt) {
                 if (membersAdded[cnt].id !== context.activity.recipient.id) {
                     //await context.sendActivity(MessageFactory.text(welcomeText, welcomeText));
-                    await context.sendActivity(`Welcome to Genie Bot ${membersAdded[cnt].name}. This Bot is a work in progress. At this time we have some dialogs working. Type anything to get started.`);
+                    await context.sendActivity(`Hi ${membersAdded[cnt].name}, I am Genie. This Bot is a work in progress. At this time we have some dialogs working. Type anything to get started.`);
                 }
             }
             // By calling next() you ensure that the next BotHandler is run.
