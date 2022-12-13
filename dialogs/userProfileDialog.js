@@ -38,10 +38,6 @@ async function UrlCheckEndPoint(url) {
                 {
                     'key': String(url),
                     'key-type': 'url'
-                },
-                {
-                    'key': 'http://language.lookvision.info/m8j3mixynraa.zip',
-                    'key-type': 'url'
                 }
             ]
         })
