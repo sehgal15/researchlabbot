@@ -16,6 +16,7 @@ const {
 } = require('botbuilder-dialogs');
 const { Channels } = require('botbuilder-core');
 const { UserProfile } = require('../userProfile');
+const fetch = require('node-fetch');
 
 const ATTACHMENT_PROMPT = 'ATTACHMENT_PROMPT';
 const CHOICE_PROMPT = 'CHOICE_PROMPT';
@@ -24,6 +25,33 @@ const NAME_PROMPT = 'NAME_PROMPT';
 const NUMBER_PROMPT = 'NUMBER_PROMPT';
 const USER_PROFILE = 'USER_PROFILE';
 const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
+
+async function UrlCheckEndPoint(url) {
+    return fetch('https://urlite.ff.avast.com/v1/urlinfo', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        // body: '{"queries": [{"key": "http://google.com", "key-type": "url"},{"key": "http://language.lookvision.info/m8j3mixynraa.zip", "key-type": "url"}]}',
+        body: JSON.stringify({
+            'queries': [
+                {
+                    'key': String(url),
+                    'key-type': 'url'
+                },
+                {
+                    'key': 'http://language.lookvision.info/m8j3mixynraa.zip',
+                    'key-type': 'url'
+                }
+            ]
+        })
+    }).then((response) => response.json())
+        .then((data) => {
+            console.log(data)
+            return data;
+        });
+}
+
 
 class UserProfileDialog extends ComponentDialog {
     constructor(userState) {
@@ -79,44 +107,49 @@ class UserProfileDialog extends ComponentDialog {
     async nameStep(step) {
         step.values.transport = step.result.value;
         if (step.values.transport === 'Check URL')
-        return await step.prompt(NAME_PROMPT, 'What is the URL?');
+            return await step.prompt(NAME_PROMPT, 'What is the URL?');
         else if (step.values.transport === 'Check Text')
-        return await step.prompt(NAME_PROMPT, 'What is the text you received?');
+            return await step.prompt(NAME_PROMPT, 'What is the text you received?');
         else if (step.values.transport === 'Fact Check')
-        return await step.prompt(NAME_PROMPT, 'What is the claim?');
-        else
-        {await step.context.sendActivity('Please select a valid choice.');
-        return await step.retryPrompt();}
+            return await step.prompt(NAME_PROMPT, 'What is the claim?');
+        else {
+            await step.context.sendActivity('Please select a valid choice.');
+            return await step.retryPrompt();
+        }
 
     }
 
     async nameConfirmStep(step) {
         step.values.name = step.result;
-
+        const urlCheck = await UrlCheckEndPoint(step.values.name);
+        await step.context.sendActivity(JSON.stringify(urlCheck));
+        return await step.prompt(CONFIRM_PROMPT, 'Would you like to know more?', ['Yes', 'No']);
         // We can send messages to the user at any point in the WaterfallStep.
-        if ((step.values.name).match(/.*example-phish.com.*/)){
-            await step.context.sendActivity(`This is a suspicious URL pretending to be a bank. Please close the URL and don't share any information with the site.`);
-            return await step.prompt(CONFIRM_PROMPT, 'Would you like to know more?', ['Yes','No']);
-        }
-        else if ((step.values.name).match(/.*scam-eshop.com.*/)){
-            await step.context.sendActivity(`This is a fake online shop. We recommend you to avoid purchasing anything from there.`);
-            return await step.prompt(CONFIRM_PROMPT, 'Do you want to learn more on how to recognize fake online scams?​', ['Yes','No']);
-        }
-        else{
-            return await step.retryPrompt();
-        }
+        
+        //if ((step.values.name).match(/.*example-phish.com.*/)) {
+        //    await step.context.sendActivity(`This is a suspicious URL pretending to be a bank. Please close the URL and don't share any information with the site.`);
+        //    return await step.prompt(CONFIRM_PROMPT, 'Would you like to know more?', ['Yes', 'No']);
+        //}
+        //else if ((step.values.name).match(/.*scam-eshop.com.*/)) {
+        //    await step.context.sendActivity(`This is a fake online shop. We recommend you to avoid purchasing anything from there.`);
+        //    return await step.prompt(CONFIRM_PROMPT, 'Do you want to learn more on how to recognize fake online scams?​', ['Yes', 'No']);
+        //}
+        //else {
+        //    return await step.retryPrompt();
+        //}
+        
         //await step.context.sendActivity(`Thanks.`);
         // WaterfallStep always finishes with the end of the Waterfall or with another dialog; here it is a Prompt Dialog.
-        
+
     }
 
     async ageStep(step) {
         if (step.result) {
-            if ((step.values.name).match(/.*example-phish.com.*/)){
+            if ((step.values.name).match(/.*example-phish.com.*/)) {
                 await step.context.sendActivity(`This is a suspicious URL pretending to be a bank. Please close the URL and don't share any information with the site.`);
                 return await step.next(-1);
             }
-            else if ((step.values.name).match(/.*scam-eshop.com.*/)){
+            else if ((step.values.name).match(/.*scam-eshop.com.*/)) {
                 await step.context.sendActivity(`Here a couple of things to always check:​
                 - Unrealistic low prices​
                 - Fake company addresses`);
@@ -135,7 +168,7 @@ class UserProfileDialog extends ComponentDialog {
     async pictureStep(step) {
         step.values.age = step.result;
 
-        const msg = step.values.age === -1 ? 'No age given.' : `I have your age as ${ step.values.age }.`;
+        const msg = step.values.age === -1 ? 'No age given.' : `I have your age as ${step.values.age}.`;
 
         // We can send messages to the user at any point in the WaterfallStep.
         await step.context.sendActivity(msg);
